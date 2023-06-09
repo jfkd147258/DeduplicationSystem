@@ -1,5 +1,4 @@
 #include "rabin_karp.h"
-
 using namespace std;
 
 const int BUFFER_SIZE = 8192;  // define buffer size

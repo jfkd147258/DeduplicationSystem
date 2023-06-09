@@ -1,3 +1,0 @@
-File [0] took 35416 milliseconds to chunk.
-File [1] took 33957 milliseconds to chunk.
-File [2] took 33871 milliseconds to chunk.
