@@ -1,28 +1,45 @@
-#include <iostream>
-#include <filesystem>
-#include <unordered_set>
+// main.cpp
 #include "sha256.h"
 #include "rabin_karp.h"
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <chrono>
+#include <unordered_set>
 
 using namespace std;
 
 int main() {
-    std::string folderPath = "Data1/";
-    std::vector<std::string> files; 
-    
-    std::unordered_set<string> fingerprints;
+    string folderPath = "Data1/";
+    vector<string> files; 
+
+    unordered_set<string> fingerprints;
     size_t totalChunks = 0;
     
-    for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
+    // Create a ofstream object to write time data to a file
+    ofstream timeData("timeData.txt", ios::out);
+
+    for (const auto& entry : filesystem::directory_iterator(folderPath)) {
         if (entry.is_regular_file() && entry.path().extension() == ".iso") {
             files.push_back(entry.path().filename());
         }
     }
 
     for (size_t i = 0; i < files.size(); i++) {
-        std::ifstream inFile(folderPath + files[i], std::ios::binary);
+        ifstream inFile(folderPath + files[i], ios::binary);
         if (inFile.is_open()) {
+            // Start timing
+            auto startTime = chrono::high_resolution_clock::now();
+
             auto chunks = rabin_chunking(inFile);
+
+            // End timing
+            auto endTime = chrono::high_resolution_clock::now();
+            auto timeDuration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+
+            // Write time data to file
+            timeData << "File " << "[" << i << "] took " << timeDuration << " milliseconds to chunk." << endl;
+
             for (const auto& chunk : chunks) {
                 string sha256FP = sha256(chunk);
                 fingerprints.insert(sha256FP);
@@ -33,17 +50,21 @@ int main() {
                 totalSize += chunk.size();
             }
             double avgSize = static_cast<double>(totalSize) / chunks.size();
-            std::cout << "File " << "[" << i << "]" << " chunks. Average chunk size: " << avgSize/2 << " KB\n";
+            cout << "File " << "[" << i << "]" << " chunks. Average chunk size: " << avgSize/2 << " KB\n";
         } else {
-            std::cerr << "Failed to open file " << files[i] << "\n";
+            cerr << "Failed to open file " << files[i] << "\n";
         }
         inFile.close();
     }
 
     double deduplicationRatio = 1.0 - (double)fingerprints.size() / totalChunks;
-    std::cout << "Total unique fingerprints: " << fingerprints.size()*2 << "\n";
-    std::cout << "Total chunks: " << totalChunks*2 << "\n";
-    std::cout << "Deduplication ratio: " << deduplicationRatio * 100 << "%\n";
+    cout << "Total unique fingerprints: " << fingerprints.size()*2 << "\n";
+    cout << "Total chunks: " << totalChunks*2 << "\n";
+    cout << "Deduplication ratio: " << deduplicationRatio * 100 << "%\n";
+
+    // Don't forget to close the ofstream
+    timeData.close();
 
     return 0;
 }
+
